@@ -11,7 +11,7 @@ podcast loadr
 
 Поставить в крон можно например как-то так (в 5 утра, каждое воскресенье):
 ```
-5 5 * * Sun cd /path/to/rtloader ; ./rtloadr.py
+5 5 * * Sun cd /path/to/pt-loadr ; ./ptloadr.py
 ```
 
 Доступные параметры:

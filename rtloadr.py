@@ -1,52 +1,51 @@
 #! /usr/bin/env python3
 #-*- coding: utf8 -*-
 
-import os
-import re
-from glob import glob
-from urllib.request import urlopen
-from urllib.request import urlretrieve as wget
+from os.path import expanduser
+HOME = expanduser("~")
 
-def getSiteFirst(rtpage='http://radio-t.com/'):
-	page = str(urlopen(rtpage).read())
-	preg = '(http(?:s)?://(?:[a-z\.\-/]+/)+([a-z_]+([0-9]{1,4}).mp3))'
-	m = re.search(preg, page)
-	try:
-		return {'url': m.group(1), 'file': m.group(2), 'id': int(m.group(3))}
-	except:
-		print ("Something went wrong.")
+import sys
+sys.path.append("plugins") 
 
-def getFSLastID(siteFirst, where='.'):
-	pattern = siteFirst['file'].replace(str(siteFirst['id']), '*')
-	try:
-		FSLast  = sorted(glob('%s/%s'%(where, pattern)), reverse=True)[0]
-	except IndexError:
-		return siteFirst['id'] - 3
-	preg    = '(\d+).*\.mp3'
-	m       = re.search(preg, FSLast)
-	if (m.group is not None): return int(m.group(1))
-	else: return siteFirst['id'] - 3
+import default   as df
 
-def rtSync(siteFirst, FSLastID, where='.'):
-	__tmp1  = siteFirst['url'].replace(siteFirst['file'],     '[XXX]')
-	__tmp2  = siteFirst['file'].replace(str(siteFirst['id']), '[XXX]')
+def main(args):
 
-	while (FSLastID < siteFirst['id']):
-		FSLastID += 1
-		pattern   = __tmp1.replace( '[XXX]', __tmp2.replace('[XXX]', str(FSLastID)) )
-		# print ('Loading> ', pattern)
-		wget(pattern, '%s/%s' % (where, __tmp2.replace('[XXX]', str(FSLastID)) ))
-		keepLast(siteFirst)
-	keepLast(siteFirst)
+	#
+	# Radio-t
+	#
+	if len(args) == 0 or 'radiot' in args:
+		# download opts
+		www = 'http://radio-t.com/'
+		reg = '(http(?:s)?://(?:[0-9a-z\.\-/]+/)+([a-z_]+([0-9]{1,4}).mp3))'
 
-def keepLast(siteFirst, count=3, where='.'):
-	pattern = siteFirst['file'].replace(str(siteFirst['id']), '*')
-	__tmp3  = sorted(glob('%s/%s'%(where, pattern)), reverse=True)[count:]
-	for ftd in __tmp3:
-		print ('Removing: ', ftd)
-		os.remove(ftd)
+		# local path opts
+		dst  = HOME + '/Music/radiot'
+
+		site_first_file = df.getSiteFirst(www, reg)
+		df.sync(
+			site_first_file,
+			df.getFSLastID(site_first_file, dst),
+			dst
+		)
+	#
+	# JSPirates
+	#
+	if len(args) == 0 or 'jspirates' in args:
+		# download opts
+		www = 'http://jspirates.com/jsp_audio.xml'
+		reg = '<guid>(http(?:s)?://(?:[0-9a-z\.\-/]+/)+([a-z_]+([0-9]{1,4}).mp3))</guid>'
+
+		# local path opts
+		dst  = HOME + '/Music/jspirates'
+
+		site_first_file = df.getSiteFirst(www, reg)
+		df.sync(
+			site_first_file,
+			df.getFSLastID(site_first_file, dst),
+			dst
+		)
 
 if __name__ == '__main__':
-	siteFirst = getSiteFirst()
-	FSLastID  = getFSLastID(siteFirst)
-	rtSync(siteFirst, FSLastID)
+	main(sys.argv[1:])
+
